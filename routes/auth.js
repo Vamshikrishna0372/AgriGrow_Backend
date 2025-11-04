@@ -1,39 +1,72 @@
 import express from "express";
-import User from "../models/User.js";
 import bcrypt from "bcrypt";
+import User from "../models/User.js"; // Ensure this imports the fixed Schema
 
 const router = express.Router();
 
-// Signup
+// ✅ Signup (Logic remains the same)
 router.post("/signup", async (req, res) => {
-  const { name, email, password } = req.body;
-  if (!name || !email || !password) return res.status(400).json({ message: "All fields are required" });
+    // ... (existing signup logic)
+    const { name, email, password } = req.body;
 
-  if (password.length < 8) return res.status(400).json({ message: "Password must be at least 8 characters" });
+    if (!name || !email || !password)
+        return res.status(400).json({ message: "All fields are required" });
 
-  const existingUser = await User.findOne({ email });
-  if (existingUser) return res.status(400).json({ message: "User already exists" });
+    if (password.length < 8)
+        return res.status(400).json({ message: "Password must be at least 8 characters" });
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser)
+            return res.status(400).json({ message: "User already exists" });
 
-  const newUser = new User({ name, email, password: hashedPassword });
-  await newUser.save();
+        const hashedPassword = await bcrypt.hash(password, 10);
+        // New user will now include default values for new schema fields
+        const newUser = new User({ name, email, password: hashedPassword, joinDate: new Date() }); 
+        await newUser.save();
 
-  res.status(201).json({ message: "Signup successful!" });
+        res.status(201).json({ message: "Signup successful!" });
+    } catch (err) {
+        res.status(500).json({ message: "Error during signup", error: err.message });
+    }
 });
 
-// Login
+// ✅ Login (Logic remains the same)
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ message: "All fields are required" });
+    // ... (existing login logic)
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.status(400).json({ message: "User not found" });
+    if (!email || !password)
+        return res.status(400).json({ message: "All fields are required" });
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ message: "User not found" });
 
-  res.status(200).json({ message: "Login successful!" });
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+        res.status(200).json({
+            message: "Login successful!",
+            user: { name: user.name, email: user.email },
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Error during login", error: err.message });
+    }
+});
+
+// ✅ Profile (by email) - **This is the key route, and it is correct.**
+router.get("/profile/:email", async (req, res) => {
+    try {
+        // Mongoose finds the user and automatically includes all fields defined in the fixed schema
+        const user = await User.findOne({ email: req.params.email }).select("-password");
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        // Sends the complete, rich user object to the frontend
+        res.status(200).json(user);
+    } catch (err) {
+        res.status(500).json({ message: "Error fetching user profile", error: err.message });
+    }
 });
 
 export default router;

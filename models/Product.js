@@ -9,7 +9,9 @@ const productSchema = new mongoose.Schema({
   inStock: { type: Boolean, default: true },
   brand: { type: String },
   type: { type: String, enum: ["Soil", "Nutrients", "Tools", "Irrigation"], default: "Soil" },
-  sku: { type: String }
+  sku: { type: String },
+  // 🔑 NEW FIELD ADDED: Quantity
+  quantity: { type: Number, required: true, default: 0 } 
 }, { timestamps: true });
 
 export default mongoose.model("Product", productSchema);

@@ -18,6 +18,7 @@ router.get("/", async (req, res) => {
 router.post("/add", async (req, res) => {
   console.log("Request body:", req.body); // 🔹 Debug incoming data
   try {
+    // Mongoose handles validation and saving the 'quantity' field from req.body
     const newProduct = new Product(req.body);
     const savedProduct = await newProduct.save();
     res.status(201).json({ message: "Product added successfully!", product: savedProduct });
@@ -26,9 +27,11 @@ router.post("/add", async (req, res) => {
     res.status(500).json({ message: "Error adding product", error: err.message });
   }
 });
+
 // Update product by ID
 router.put("/update/:id", async (req, res) => {
   try {
+    // Mongoose handles updating the 'quantity' field from req.body
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -53,6 +56,5 @@ router.delete("/delete/:id", async (req, res) => {
     res.status(500).json({ message: "Error deleting product", error: err.message });
   }
 });
-
 
 export default router;
