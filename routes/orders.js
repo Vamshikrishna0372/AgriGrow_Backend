@@ -256,6 +256,7 @@ router.put("/update-status/:id", mockAuthMiddleware, async (req, res) => {
             return res.status(404).json({ message: "Order not found." });
         }
         
+        // Prevent changing status if it's already in a final state
         if (['Delivered', 'Failed', 'Cancelled'].includes(order.payment.status)) {
             return res.status(400).json({ 
                 message: `Cannot change status of an order that is already ${order.payment.status}.` 
@@ -296,5 +297,34 @@ router.put("/update-status/:id", mockAuthMiddleware, async (req, res) => {
         res.status(500).json({ message: "Server error during order status update." });
     }
 });
+
+// =======================================================
+// 🗑️ F. PERMANENTLY DELETE ORDER (DELETE /api/orders/delete/:id) 💥 ADDED 
+// =======================================================
+router.delete("/delete/:id", async (req, res) => {
+    const orderId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+        return res.status(400).json({ message: "Invalid order ID format." });
+    }
+
+    try {
+        // Use findByIdAndDelete to remove the order permanently
+        const deletedOrder = await Order.findByIdAndDelete(orderId);
+
+        if (!deletedOrder) {
+            return res.status(404).json({ message: "Order not found." });
+        }
+
+        res.status(200).json({ 
+            message: `Order ${orderId} permanently deleted from the database.`,
+            deletedOrderId: orderId
+        });
+    } catch (err) {
+        console.error("Error permanently deleting order:", err);
+        res.status(500).json({ message: "Failed to permanently delete order." });
+    }
+});
+
 
 export default router;
